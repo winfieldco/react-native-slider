@@ -6,7 +6,8 @@ var {
   StyleSheet,
   PanResponder,
   View,
-  Platform
+  Platform,
+  Animated,
 } = React;
 
 var TRACK_SIZE = 4;
@@ -112,6 +113,27 @@ var Slider = React.createClass({
      * Set this to true to visually see the thumb touch rect in green.
      */
     debugTouchArea: PropTypes.bool,
+
+    /**
+     * Whether or not in loading state, in which case shows the loading indicator.
+     */
+    loading: PropTypes.bool,
+
+    /**
+     * Width of the loading track.
+     */
+    loadingTrackWidth: PropTypes.number,
+
+    /**
+     * Duration of the loading track animation.
+     */
+    loadingTrackAnimationDuration: PropTypes.number,
+
+    /**
+     * Color of the loading track.
+     */
+    loadingTrackTintColor: PropTypes.string,
+
   },
   getInitialState() {
     return {
@@ -120,6 +142,8 @@ var Slider = React.createClass({
       thumbSize: {},
       previousLeft: 0,
       value: this.props.value,
+      loadingOpacity: new Animated.Value(0),
+      loadingMarginLeft: new Animated.Value(-this.props.loadingTrackWidth),
     };
   },
   getDefaultProps() {
@@ -129,9 +153,13 @@ var Slider = React.createClass({
       maximumValue: 1,
       minimumTrackTintColor: '#3f3f3f',
       maximumTrackTintColor: '#b3b3b3',
+      loadingTrackTintColor: '#dfdfdf',
       thumbTintColor: '#343434',
       thumbTouchSize: {width: 40, height: 40},
       debugTouchArea: false,
+      loading: false,
+      loadingTrackWidth: 100,
+      loadingTrackAnimationDuration: 1000,
     };
   },
   componentWillMount() {
@@ -143,6 +171,37 @@ var Slider = React.createClass({
       onPanResponderRelease: this._handlePanResponderEnd,
       onPanResponderTerminate: this._handlePanResponderEnd,
     });
+  },
+  componentDidUpdate(prevProps, prevState) {
+
+    // Smooth fade out of loading track when finished
+    if(prevProps.loading == true && this.props.loading == false) {
+      Animated.timing(
+        this.state.loadingOpacity, {
+          toValue: 0,
+          duration: 300,
+        }
+      ).start();
+    }
+
+    if(this.state.trackSize && this.state.trackSize.width) {
+      if(this._startedAnimateLoading) {
+
+      }
+      else {
+        this._startedAnimateLoading = true;
+        this._animateLoading();
+
+        // Fade in the loading track
+        Animated.timing(
+          this.state.loadingOpacity, {
+            toValue: 1,
+            duration: 300,
+          }
+        ).start();
+
+      }
+    }
   },
   componentWillReceiveProps: function(nextProps) {
     this.setState({value: nextProps.value});
@@ -172,7 +231,6 @@ var Slider = React.createClass({
     var minimumTrackStyle = {
       position: 'absolute',
       width: 300, // needed to workaround a bug for borderRadius
-      marginTop: -trackSize.height,
       backgroundColor: minimumTrackTintColor,
       ...valueVisibleStyle
     };
@@ -183,12 +241,22 @@ var Slider = React.createClass({
 
     var touchOverflowStyle = this._getTouchOverflowStyle();
 
+    var loadingTrackStyle = {
+      position: 'absolute',
+      marginLeft: this.state.loadingMarginLeft,
+      width: this.props.loadingTrackWidth, // needed to workaround a bug for borderRadius
+      opacity: this.state.loadingOpacity,
+      backgroundColor: this.props.loadingTrackTintColor,
+    }
+
     return (
       <View {...other} style={[mainStyles.container, style]} onLayout={this._measureContainer}>
         <View
           style={[{backgroundColor: maximumTrackTintColor}, mainStyles.track, trackStyle]}
-          onLayout={this._measureTrack} />
-        <View style={[mainStyles.track, trackStyle, minimumTrackStyle]} />
+          onLayout={this._measureTrack}>
+          <View style={[mainStyles.track, trackStyle, minimumTrackStyle]} />
+          <Animated.View style={[mainStyles.track, trackStyle, loadingTrackStyle]} />
+        </View>
         <View
           ref={(thumb) => this.thumb = thumb}
           onLayout={this._measureThumb}
@@ -204,6 +272,27 @@ var Slider = React.createClass({
         </View>
       </View>
     );
+  },
+
+  _animateLoading: function() {
+
+    // Animate the loading to go back and forth similar to the google progress indicator for bars.
+    // https://www.google.com/design/spec/components/progress-activity.html
+    Animated.timing(
+      this.state.loadingMarginLeft, {
+        toValue: this.state.trackSize.width,
+        duration: this.props.loadingTrackAnimationDuration,
+      }
+    ).start(() => {
+      Animated.timing(
+        this.state.loadingMarginLeft, {
+          toValue: -this.props.loadingTrackWidth,
+          duration: 0,
+        }
+      ).start(() => {
+        this._animateLoading();
+      });
+    });
   },
 
   _handleStartShouldSetPanResponder: function(e: Object, /*gestureState: Object*/): boolean {
@@ -358,6 +447,7 @@ var defaultStyles = StyleSheet.create({
   track: {
     height: TRACK_SIZE,
     borderRadius: TRACK_SIZE / 2,
+    overflow: 'hidden',
   },
   thumb: {
     position: 'absolute',
