@@ -1,13 +1,17 @@
 'use strict';
 
-var React = require('react-native');
+var React = require('react');
+var ReactNative = require('react-native');
 var {
-  PropTypes,
   StyleSheet,
   PanResponder,
   View,
   Platform,
   Animated,
+} = ReactNative;
+
+var {
+  PropTypes,
 } = React;
 
 var TRACK_SIZE = 4;
