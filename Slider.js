@@ -188,7 +188,8 @@ var Slider = React.createClass({
       ).start();
     }
 
-    if(this.state.trackSize && this.state.trackSize.width) {
+    // Smooth fade in of loading track if we are loading, and we have the track ready
+    if(this.state.trackSize && this.state.trackSize.width && this.props.loading == true) {
       if(this._startedAnimateLoading) {
 
       }
