@@ -107,17 +107,17 @@ var Slider = React.createClass({
     /**
      * The style applied to the slider container.
      */
-    style: View.propTypes.style,
+    style: PropTypes.object,
 
     /**
      * The style applied to the track.
      */
-    trackStyle: View.propTypes.style,
+    trackStyle: PropTypes.object,
 
     /**
      * The style applied to the thumb.
      */
-    thumbStyle: View.propTypes.style,
+    thumbStyle: PropTypes.object,
 
     /**
      * Set this to true to visually see the thumb touch rect in green.
